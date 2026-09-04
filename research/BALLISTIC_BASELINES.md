@@ -167,8 +167,10 @@ Real same-caliber velocity spread vs barrel length (from the FACEHARD/range tabl
 
 Game knobs (`params.csv`): `gun_length_velocity_min/max` = -0.25/+0.125 across the
 ±20-caliber `min/max_gun_length_mod` span. At +12.5% max over 20 cal, the model gives
-~+3.1% per +5 cal — slightly conservative vs the real ~4–9%. If tuners want a closer
-match, raise `gun_length_velocity_max` from 0.125 toward 0.18 (≈ +4.5% per +5 cal).
+~+3.1% per +5 cal — slightly conservative vs the real ~4–9%.
+
+**APPLIED:** `gun_length_velocity_max` 0.125 → 0.18 (≈ +4.5% per +5 cal), matching the
+real 45→50-caliber spread more closely.
 
 `gun_length_firerate_min/max` = 0.105/-0.18 already captures that longer barrels fire
 slightly slower (correct sign). `gun_length_range` and `gun_length_penetration` are
@@ -178,3 +180,19 @@ already monotonic in the right direction; leave unless empirical tests show othe
 "default" caliber per class should sit near the real service lengths (e.g. battleship
 main 45–50 cal, cruiser 50–60 cal, secondary 45–55 cal) — the `default_caliber_lerp_min/
 max` band (5–70) already spans these.
+
+---
+
+## 8. Long-range accuracy steepening
+
+Real combat hit-rates fall off far more steeply than the stock model (Jutland: ~3%;
+USN WWII 16"/50 theoretical: 32.7% @10 kyd → 10.5% @20 kyd → 2.7% @30 kyd; realistic
+combat ~1–3% beyond 20 kyd). The game's far-range penalty is the lever.
+
+**APPLIED:** `aim_far_modifier` 5 → 8, steepening the far-range accuracy penalty toward
+the historical ~1–3% at 20k–30k yd. `target_locked_base/exp` and `aim_close_modifier`
+were left unchanged (already in a defensible range); re-tune these only after in-game
+testing of the far-range falloff.
+
+*Validate in-game:* confirm long-range (≥20 kyd) main-battery hit rates drop to ~1–3%,
+close-range (≤10 kyd) hold near 30%, and that AI fire doesn't become trivially weak.
