@@ -28,13 +28,21 @@ The vanilla game grants the AI hidden bonuses. This mod neutralizes them:
 
 ### 2. Historical rebalance
 Combat and ballistics tuned against real-world references (NavWeaps, Campbell,
-Friedman, Garzke & Dulin, Burt). Runtime patches cover:
-- Armor quality modifiers (RHA / CHA / FHA / STS)
-- Shell construction effects (AP / APC / APCBC / APCR / APHE / SAP / HE)
-- Yaw-based effective armor and smooth ricochet curves (War Thunder style)
-- Historical turret loading / traverse, propulsion, and fire-control accuracy
-- Historical torpedo ballistics (incl. Japanese Type 93 "Long Lance" range)
-- IJN fire-control penalty vs. USN/RN (no radar integration)
+Friedman, Garzke & Dulin, Burt, Nathan Okun / Robert Lundgren). Changes:
+- `guns.csv` — historic **muzzle velocity** and **shell mass** per caliber (1"–21"),
+  anchored to real service rounds (e.g. 16" = 1225 kg @ 762 m/s; 14" = 680 kg @
+  823 m/s).
+- `penetration.csv` — belt and deck **armor penetration curves** per caliber,
+  calibrated to Okun/Lundgren FACEHARD tables (US Class A) and NavWeaps
+  side-penetration data. The stock/DIP values were ~1.25–1.9× over-stated at close
+  range; now they match the physical tables.
+- Runtime patches cover (unchanged from prior work):
+  - Armor quality modifiers (RHA / CHA / FHA / STS)
+  - Shell construction effects (AP / APC / APCBC / APCR / APHE / SAP / HE)
+  - Yaw-based effective armor and smooth ricochet curves (War Thunder style)
+  - Historical turret loading / traverse, propulsion, and fire-control accuracy
+  - Historical torpedo ballistics (incl. Japanese Type 93 "Long Lance" range)
+  - IJN fire-control penalty vs. USN/RN (no radar integration)
 
 ### 3. Fixes a game-breaking crash
 UAD custom battles stall indefinitely ("computer gets stuck generating a ship")
@@ -78,7 +86,11 @@ auto-generates instead of crashing. See `source/TAF/` and
 5. Copy `csv/params_override.csv` → `<UAD>/params_override.csv`
 6. Copy `csv/epfm_data.csv` → `<UAD>/epfm_data.csv`
 7. Copy `csv/aiPersonalities.csv` → `<UAD>/Mods/Default_Files/UAD_Files/aiPersonalities.csv`
-8. Launch the game.
+8. Copy `game_files/UAD_Files/guns.csv` → `<UAD>/Mods/Default_Files/UAD_Files/guns.csv`
+   (historic muzzle velocity + shell mass per caliber)
+9. Copy `game_files/UAD_Files/penetration.csv` → `<UAD>/Mods/Default_Files/UAD_Files/penetration.csv`
+   (Okun/NavWeaps armor penetration curves)
+10. Launch the game.
 
 > **Note:** this mod was tested against UAD **1.7.0.0** (the final version of the game)
 > and TAF **3.21.1**. `params.csv` and `aiPersonalities.csv` are treated as

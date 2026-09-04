@@ -153,3 +153,28 @@ above show (e.g. 16"/45 = 2300 fps vs 16"/50 = 2500 fps; 14"/45 = 2600 vs 14"/50
 - Nathan Okun, "Major Historical Naval Armor Penetration Formulae",
   https://www.navweaps.com/index_nathan/Hstfrmla.php — era armor coefficients.
 - Companion research notes: `research/RESEARCH_NOTES.md` in this repository.
+---
+
+## 7. Barrel-length (caliber) calibration
+
+Real same-caliber velocity spread vs barrel length (from the FACEHARD/range tables):
+
+| Caliber | 45-cal MV | 50-cal MV | +Δ per +5 cal |
+|---|---|---|---|
+| 16" | 2300 fps (701 m/s) | 2500 fps (762 m/s) | **+8.7%** |
+| 14" | 2600 fps (792 m/s) | 2700 fps (823 m/s) | **+3.8%** |
+| 12" | 2400 fps (731) | 2500 fps (762) | ~+4% |
+
+Game knobs (`params.csv`): `gun_length_velocity_min/max` = -0.25/+0.125 across the
+±20-caliber `min/max_gun_length_mod` span. At +12.5% max over 20 cal, the model gives
+~+3.1% per +5 cal — slightly conservative vs the real ~4–9%. If tuners want a closer
+match, raise `gun_length_velocity_max` from 0.125 toward 0.18 (≈ +4.5% per +5 cal).
+
+`gun_length_firerate_min/max` = 0.105/-0.18 already captures that longer barrels fire
+slightly slower (correct sign). `gun_length_range` and `gun_length_penetration` are
+already monotonic in the right direction; leave unless empirical tests show otherwise.
+
+*Recommendation:* keep the ±20-caliber designer freedom, but for historical builds the
+"default" caliber per class should sit near the real service lengths (e.g. battleship
+main 45–50 cal, cruiser 50–60 cal, secondary 45–55 cal) — the `default_caliber_lerp_min/
+max` band (5–70) already spans these.

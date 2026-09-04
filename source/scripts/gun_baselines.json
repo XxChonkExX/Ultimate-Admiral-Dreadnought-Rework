@@ -1,0 +1,26 @@
+{
+  "_comment": "Authoritative per-caliber gun baselines (regular AP shell). Units match guns.csv: mv = m/s, shell = kg, range = km. Sources: NavWeaps, Okun/Lundgren FACEHARD, Campbell, Friedman. See research/BALLISTIC_BASELINES.md.",
+  "guns": {
+    "1":  { "mv": 760,  "shell": 0.45,   "range": 4.0 },
+    "2":  { "mv": 700,  "shell": 1.0,    "range": 7.0 },
+    "3":  { "mv": 700,  "shell": 5.7,    "range": 8.0 },
+    "4":  { "mv": 853,  "shell": 11.3,   "range": 11.5 },
+    "5":  { "mv": 870,  "shell": 22.7,   "range": 25.6 },
+    "6":  { "mv": 853,  "shell": 45.4,   "range": 15.0 },
+    "7":  { "mv": 920,  "shell": 97.5,   "range": 37.8 },
+    "8":  { "mv": 914,  "shell": 117,    "range": 20.0 },
+    "9":  { "mv": 869,  "shell": 172,    "range": 24.0 },
+    "10": { "mv": 853,  "shell": 250,    "range": 27.0 },
+    "11": { "mv": 910,  "shell": 300,    "range": 36.5 },
+    "12": { "mv": 762,  "shell": 470.9,  "range": 32.0 },
+    "13": { "mv": 753,  "shell": 574,    "range": 33.0 },
+    "14": { "mv": 823,  "shell": 680,    "range": 36.0 },
+    "15": { "mv": 780,  "shell": 879,    "range": 37.0 },
+    "16": { "mv": 762,  "shell": 1225,   "range": 38.7 },
+    "17": { "mv": 780,  "shell": 1020,   "range": 38.0 },
+    "18": { "mv": 780,  "shell": 1460,   "range": 42.0 },
+    "19": { "mv": 780,  "shell": 1485,   "range": 42.0 },
+    "20": { "mv": 750,  "shell": 1700,   "range": 44.0 },
+    "21": { "mv": 730,  "shell": 2000,   "range": 45.0 }
+  }
+}
