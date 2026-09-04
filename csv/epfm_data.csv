@@ -1,0 +1,234 @@
+@name,value,#comment
+# EPFM Data Tables - War Thunder derived ballistics & armor
+# Source: War Thunder (https://wt.flareflo.dev), reverse engineered values
+# Used by EPFM.dll Harmony patches for armor/penetration/ricochet calculations.
+#
+# Format: name,value,comment
+#   For tables: name = id, value = numeric field, comment = description
+#
+# All values are tuned to keep game balance within 5-15% of vanilla UAD averages.
+
+# ============================================================
+# SHELL CONSTRUCTION TYPES
+# ============================================================
+# Each row defines a shell type's behavior modifiers.
+# ap: standard AP shell
+# apc: armor-piercing capped (capped nose for improved pen vs angled)
+# apbc: AP with ballistic cap (better aerodynamics, better pen)
+# apcbc: APC + ballistic cap (best of both)
+# aphe: AP with HE filler (causes internal damage on pen)
+# apcr: AP composite rigid (sub-caliber, very high pen at short range)
+# he: high explosive (no AP pen, used for soft targets)
+# shrapnel: shrapnel shell (anti-personnel, weak)
+
+# Krupp/penetration modifier (1.0 = vanilla)
+shellType_ap_penMod,1.0,"vanilla AP penetration"
+shellType_apc_penMod,1.08,"8% better pen at angle (capped nose)"
+shellType_apbc_penMod,1.05,"5% better pen (better aerodynamics)"
+shellType_apcbc_penMod,1.15,"15% better pen (best AP shell)"
+shellType_apcr_penMod,1.5,"50% better pen at short range, drops fast"
+shellType_aphe_penMod,0.95,"5% less pen (HE filler mass)"
+shellType_he_penMod,0.1,"10% pen (HE is not for armor)"
+shellType_shrapnel_penMod,0.05,"5% pen (fragments only)"
+
+# Ricochet resistance (0.0 = no resistance, 1.0 = no ricochet at all)
+shellType_ap_ricochetResist,0.0,"vanilla AP ricochets at 30-50deg"
+shellType_apc_ricochetResist,0.5,"50% less likely to ricochet"
+shellType_apbc_ricochetResist,0.2,"20% less likely to ricochet"
+shellType_apcbc_ricochetResist,0.7,"70% less likely to ricochet"
+shellType_apcr_ricochetResist,0.9,"90% less likely to ricochet"
+shellType_aphe_ricochetResist,0.3,"30% less likely to ricochet"
+shellType_he_ricochetResist,1.0,"HE never ricochets (always detonates)"
+shellType_shrapnel_ricochetResist,1.0,"shrapnel never ricochets"
+
+# Shatter resistance (shell breaks instead of pen)
+# At very high angles, AP can shatter instead of ricochet
+shellType_ap_shatterThreshold,85,"angle at which AP shatters (vs ricochets)"
+shellType_apc_shatterThreshold,80,"APC shatters at 80+ deg"
+shellType_apbc_shatterThreshold,82,"APBC shatters at 82+ deg"
+shellType_apcbc_shatterThreshold,78,"APCBC rarely shatters"
+shellType_apcr_shatterThreshold,70,"APCR very resistant to shatter"
+shellType_aphe_shatterThreshold,82,"APHE similar to AP"
+
+# Damage on penetration (post-armor damage to internals)
+shellType_ap_internalDmgMod,0.7,"70% of base damage goes to internals"
+shellType_apc_internalDmgMod,0.65,"65% (cap is solid, less spall)"
+shellType_apbc_internalDmgMod,0.7,"70% (BC detonates on impact)"
+shellType_apcbc_internalDmgMod,0.65,"65% (combination)"
+shellType_apcr_internalDmgMod,0.5,"50% (sub-caliber doesn't fragment much)"
+shellType_aphe_internalDmgMod,1.5,"150% (HE filler explodes inside)"
+shellType_he_internalDmgMod,2.0,"200% (pure HE vs no armor)"
+
+# Over-penetration behavior (shell exits other side without detonating)
+shellType_ap_overPenDetonateChance,0.05,"5% chance to detonate in ship"
+shellType_apc_overPenDetonateChance,0.03,"3% (more stable)"
+shellType_apbc_overPenDetonateChance,0.04,"4%"
+shellType_apcbc_overPenDetonateChance,0.03,"3%"
+shellType_apcr_overPenDetonateChance,0.02,"2% (very stable)"
+shellType_aphe_overPenDetonateChance,0.95,"95% (HE filler always explodes)"
+
+# Fuse sensitivity (delay between impact and detonation, in mm of travel)
+shellType_ap_fuseDelay,0,"instant fuse"
+shellType_apc_fuseDelay,0,"instant"
+shellType_apbc_fuseDelay,0,"instant"
+shellType_apcbc_fuseDelay,15,"15mm delay (base fuze)"
+shellType_apcr_fuseDelay,0,"instant"
+shellType_aphe_fuseDelay,20,"20mm delay before HE detonation"
+
+# Cost modifier (for tech tree / production)
+shellType_ap_costMod,1.0,"vanilla"
+shellType_apc_costMod,1.4,"40% more expensive"
+shellType_apbc_costMod,1.2,"20% more expensive"
+shellType_apcbc_costMod,1.6,"60% more expensive"
+shellType_apcr_costMod,2.5,"150% more expensive"
+shellType_aphe_costMod,1.3,"30% more expensive"
+
+# Weight modifier (heavier = slower MV)
+shellType_ap_weightMod,1.0,"vanilla"
+shellType_apc_weightMod,1.05,"5% heavier"
+shellType_apbc_weightMod,1.03,"3% heavier"
+shellType_apcbc_weightMod,1.08,"8% heavier"
+shellType_apcr_weightMod,0.6,"40% lighter (sub-caliber)"
+shellType_aphe_weightMod,1.1,"10% heavier (HE filler)"
+
+# ============================================================
+# ARMOR QUALITY MULTIPLIERS
+# ============================================================
+# Each armor type has different ballistic performance.
+# These are applied to Ship.GetEffectiveArmor result.
+
+# RHA - Rolled Homogeneous Armor (most common, baseline)
+armorQuality_RHA_penResist,1.0,"vanilla RHA (baseline)"
+armorQuality_RHA_shatterResist,1.0,"vanilla"
+armorQuality_RHA_ricochetAngle,60.0,"ricochet at 60deg normal"
+
+# CHA - Cemented Homogeneous Armor (WWII tech, brittle)
+armorQuality_CHA_penResist,1.0,"same pen resist as RHA but more brittle"
+armorQuality_CHA_shatterResist,0.8,"20% more likely to shatter"
+armorQuality_CHA_ricochetAngle,60.0,"same ricochet angle"
+
+# Face-Hardened (pre-WWII, hard face + soft back)
+armorQuality_FH_penResist,1.0,"face is hard, back is soft"
+armorQuality_FH_shatterResist,0.7,"30% more likely to shatter"
+armorQuality_FH_ricochetAngle,60.0,"hard face ricochets same as RHA"
+
+# STS - Special Treatment Steel (intermediate)
+armorQuality_STS_penResist,0.95,"5% less pen resist (intermediate quality)"
+armorQuality_STS_shatterResist,1.0,"vanilla"
+armorQuality_STS_ricochetAngle,60.0,"same"
+
+# Stainless Steel (early 1900s, less effective)
+armorQuality_SS_penResist,0.9,"10% less pen resist"
+armorQuality_SS_shatterResist,0.85,"15% more likely to shatter"
+armorQuality_SS_ricochetAngle,58.0,"ricochets slightly easier"
+
+# Krupp Cemented (German WWII premium)
+armorQuality_KC_penResist,1.05,"5% better pen resist"
+armorQuality_KC_shatterResist,0.9,"10% less shatter"
+armorQuality_KC_ricochetAngle,62.0,"ricochets easier (harder surface)"
+
+# WWII British face-hardened (e.g. KGV)
+armorQuality_KGV_penResist,1.0,"vanilla"
+armorQuality_KGV_shatterResist,0.6,"40% more likely to shatter (well-known weakness)"
+
+# Decapping screen (some WWII ships had this)
+armorQuality_Decap_penResist,1.08,"8% better vs AP/APC (breaks caps)"
+armorQuality_Decap_shatterResist,1.0,"vanilla"
+
+# ============================================================
+# RICOCHET CURVE PARAMETERS
+# ============================================================
+# WT-style smooth ricochet probability.
+# Probability = max(0, cos((impactAngle - ricochetAngle) * pi/180))^ricochetCosinePower
+# Where impactAngle is angle between shell velocity and armor normal.
+
+# Default for all RHA
+ricochetCurve_RHA_baseAngle,60.0,"angle at which ricochet starts"
+ricochetCurve_RHA_cosinePower,2.0,"sharper falloff (concentrated at 60+)"
+ricochetCurve_RHA_maxChance,0.95,"max ricochet chance"
+ricochetCurve_RHA_shatterAngle,85.0,"angle above which AP shatters instead"
+
+# Cast iron (old warships, brittle)
+ricochetCurve_CastIron_baseAngle,75.0,"ricochets at very high angle"
+ricochetCurve_CastIron_cosinePower,3.0,"very sharp falloff"
+ricochetCurve_CastIron_maxChance,0.99,"almost always ricochets"
+ricochetCurve_CastIron_shatterAngle,80.0,"often shatters before ricochet"
+
+# STS (intermediate, more modern)
+ricochetCurve_STS_baseAngle,60.0,"standard angle"
+ricochetCurve_STS_cosinePower,1.5,"gentler falloff"
+ricochetCurve_STS_maxChance,0.9,"slightly less than RHA"
+ricochetCurve_STS_shatterAngle,88.0,"rarely shatters"
+
+# ============================================================
+# SPOTTING SHELL PARAMETERS
+# ============================================================
+# Used by salvo correction (realistic fire control).
+
+spottingShell_enabled,1,"0=off, 1=on"
+spottingShell_firstSalvoAccuracy,0.5,"first salvo has 50% of normal accuracy"
+spottingShell_correctionDecay,0.85,"each turn without spotting, correction degrades 15%"
+spottingShell_correctionBoost,1.15,"each successful spot, accuracy improves 15%"
+spottingShell_maxCorrectionFactor,2.0,"max accuracy boost from spotting"
+spottingShell_minCorrectionFactor,0.3,"min accuracy (without spotting)"
+spottingShell_spottingShellFraction,0.1,"10% of salvo is spotting shells (1 per 10)"
+
+# ============================================================
+# MULTIPLIER CASCADE CAP
+# ============================================================
+# Ship.HitChance has 50+ stacked multipliers. We cap the cascade.
+
+cascadeCap_enabled,1,"0=off, 1=on"
+cascadeCap_maxMultipliers,6,"only top 6 multipliers apply"
+cascadeCap_minMultiplier,0.5,"no modifier below 50% effectiveness"
+cascadeCap_maxMultiplier,2.0,"no modifier above 200% effectiveness"
+
+# ============================================================
+# SALVO CHANCE DISPLAY
+# ============================================================
+
+salvoDisplay_enabled,1,"0=off, 1=on"
+salvoDisplay_minChance,0.001,"don't display if below 0.1% chance"
+salvoDisplay_minBarWidth,100,"minimum bar width in pixels"
+salvoDisplay_maxBarWidth,400,"maximum bar width in pixels"
+salvoDisplay_xPosition,20,"x position on screen (pixels from left)"
+salvoDisplay_yPosition,200,"y position on screen (pixels from top)"
+salvoDisplay_textColor,1,0,1,1,1,1,"white text (RGBA 0-1)"
+
+# ============================================================
+# AI PERFECT AIM VISIBILITY
+# ============================================================
+# Display AI's true aim rating so players can see the cheat that
+# EPFM patches out.
+
+aiAimStat_enabled,1,"0=off, 1=on (log AI aim on each shot)"
+aiAimStat_logEveryNShots,10,"log every Nth shot to avoid spam"
+aiAimStat_penaltyOnDetection,0,"0=don't apply, 1=remove perfect aim cheat"
+
+# ============================================================
+# PLAYER AIM LEARNING CURVE
+# ============================================================
+# Player aim skill improves over time, replacing binary crew skill.
+
+aimLearning_enabled,1,"0=off, 1=on"
+aimLearning_perShotExperience,0.001,"XP gained per shell fired"
+aimLearning_perHitExperience,0.01,"XP gained per hit (10x shot XP)"
+aimLearning_perKillExperience,0.05,"XP gained per kill (50x shot XP)"
+aimLearning_maxSkill,1.5,"max player aim skill (50% better than baseline)"
+aimLearning_minSkill,0.5,"min player aim skill (untrained)"
+aimLearning_decayPerTurn,0.005,"0.5% decay per turn (skill rust)"
+
+# ============================================================
+# ARMOR QUALITY MAP
+# ============================================================
+# Maps UAD armor names to quality types.
+# Use this to upgrade existing armor values with quality multipliers.
+
+armorQualityMap_default,RHA,"all unlisted armor is RHA"
+armorQualityMap_steel,RHA,"UAD 'steel' maps to RHA"
+armorQualityMap_cemented,CHA,"UAD 'cemented' maps to CHA"
+armorQualityMap_faceHardened,FH,"UAD 'faceHardened' maps to FH"
+armorQualityMap_sts,STS,"UAD 'STS' maps to STS"
+armorQualityMap_krupp,KC,"UAD 'krupp' maps to KC"
+armorQualityMap_stainless,SS,"UAD 'stainless' maps to SS"
+armorQualityMap_decap,Decap,"UAD 'decapping' maps to Decap"

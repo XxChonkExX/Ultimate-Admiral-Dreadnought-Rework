@@ -1,0 +1,19 @@
+# Build artifacts
+source/EPFM/bin/
+source/EPFM/obj/
+source/TAF/bin/
+source/TAF/obj/
+
+# MSBuild
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor/IDE
+.vs/
+.idea/
+*.swp

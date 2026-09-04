@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>EPFM</AssemblyName>
+    <RootNamespace>EPFM</RootNamespace>
+    <Description>Even Playing Field Mod for Ultimate Admiral: Dreadnoughts</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Reference MelonLoader DLLs from the actual game installation -->
+    <Reference Include="MelonLoader">
+      <HintPath>D:\SteamLibrary\steamapps\common\Ultimate Admiral Dreadnoughts\MelonLoader\net6\MelonLoader.dll</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>D:\SteamLibrary\steamapps\common\Ultimate Admiral Dreadnoughts\MelonLoader\net6\0Harmony.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

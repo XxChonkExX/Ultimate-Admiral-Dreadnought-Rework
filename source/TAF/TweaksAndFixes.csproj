@@ -1,0 +1,132 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Company>NathanKell</Company>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(UAD_PATH)MelonLoader/net6/0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(UAD_PATH)MelonLoader/net6/Il2CppInterop.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppMessagePack">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2CppMessagePack.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2Cppmscorlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppNewtonsoft.Json">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2CppNewtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2CppSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Core">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2CppSystem.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MelonLoader">
+      <HintPath>$(UAD_PATH)MelonLoader/net6/MelonLoader.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.InputModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.Physics2DModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties/" />
+  </ItemGroup>
+
+  <Target Name="CopyAssets" AfterTargets="Build">
+    <Error Condition="'$(UAD_PATH)' == '' OR !Exists('$(UAD_PATH)')"
+           Text="UAD_PATH not set or invalid." />
+    
+    <ItemGroup>
+      <BuiltDll Include="$(TargetDir)TweaksAndFixes.dll" />
+      <AssetFiles Include="$(ProjectDir)Assets/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(BuiltDll)"
+          DestinationFiles="@(BuiltDll->'$(UAD_PATH)Mods/%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(BuiltDll)"
+          DestinationFiles="@(BuiltDll->'$(ProjectDir)TAF_Nightly/%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+
+
+    <RemoveDir Directories="$(UAD_PATH)Mods/TAFData"
+               Condition="Exists('$(UAD_PATH)Mods/TAFData')" />
+
+    <Copy SourceFiles="@(AssetFiles)"
+          DestinationFiles="@(AssetFiles->'$(UAD_PATH)Mods/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
