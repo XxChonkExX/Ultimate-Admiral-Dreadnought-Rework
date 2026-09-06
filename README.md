@@ -25,6 +25,7 @@ The vanilla game grants the AI hidden bonuses. This mod neutralizes them:
 | AI perfect aim | Runtime patches normalize AI accuracy/aiming/reload/damage-control skill values |
 | AI fog-of-war bypass | AI ships now respect fog of war like the player |
 | AI movement | Max speed / acceleration / crew quarters nerfs equalized |
+| Major durability | `lose_provinces_threshold` 0.3 → 0.1: majors survive losing a capital/home territory (French-WWII model) and dissolve only when essentially annihilated, so the player conquers collapsed majors deliberately rather than by RNG |
 
 ### 2. Historical rebalance
 Combat and ballistics tuned against real-world references (NavWeaps, Campbell,
