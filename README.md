@@ -7,6 +7,7 @@ data, while fixing a game-breaking custom-battle crash.
 This project builds on, and would not exist without, the excellent work of others —
 see **[Credits](#credits)**.
 
+Edit: A sub-branch has been released that includes my barebones CV Carrier mod if you care to check it out.
 ---
 
 ## What this does
