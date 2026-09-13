@@ -114,7 +114,32 @@ taf_epfm_v3_yawArmor,1                      # War-Thunder-style yaw armor
 taf_epfm_v4_penetration_scale,1.0           # global penetration multiplier
 taf_epfm_v5_turret_realism,1                # historical turret rates
 taf_epfm_v5_fire_control_realism,1          # historical fire-control
+taf_epfm_trace,0                            # diagnostic: log every patch entry (one run only)
 ```
+
+> **Note:** EPFM reads these switches live from the installed
+> `params_override.csv` (reloaded when the file changes) — the game has no
+> `GameData.Instance` singleton, so the config never depended on it.
+
+---
+
+## Runtime patch notes (EPFM v8)
+
+Audited against the 1.7.0.0 binary (`dump.cs`). All 25 hook targets verified by
+(name, arity, staticness); every postfix is `public static`, so lookups use
+`Public` flags. AI detection probes per type (`isAi` field → `isAi` property →
+`isAiControlled` property) because Il2Cpp instance fields are invisible to
+classic reflection at runtime.
+
+**Hard rule: never patch an original with struct/`Nullable` parameters.**
+`Ship.GetPenetration` (takes `Nullable<ShellType>` + `Nullable<Vector3>`) is
+compiled out for exactly this reason — crash-dump proven: Harmony's Il2Cpp
+wrapper Memmove-copies those structs per call, and turret-click stat cards
+invoke it with null nullables (no target in preview), AV-ing the runtime
+(`c0000005` in coreclr, `ExecutionEngineException`). Safe parameter classes:
+primitives, `string`, `object`, references, generic collections. The v4
+penetration multiplier therefore has no runtime effect until a safe
+application point is found; the `penetration.csv` data curves are unaffected.
 
 ---
 

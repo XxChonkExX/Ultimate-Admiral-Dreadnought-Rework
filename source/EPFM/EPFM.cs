@@ -42,34 +42,70 @@ namespace EPFM
 
     public static class EPFMConfig
     {
-        private static bool _initialized = false;
-        private static MethodInfo _paramMethod = null;
-        private static object _gameDataInstance = null;
+        // File-based tuning: GameData has NO Instance singleton in 1.7.0.0
+        // (the old reflection path never resolved, so every switch silently
+        // ran on hardcoded defaults). Read params_override.csv directly.
+        private static System.Collections.Generic.Dictionary<string, float> _params = null;
+        private static System.DateTime _paramsMtime = System.DateTime.MinValue;
+        private static string _paramsPath = null;
+        private static System.DateTime _lastMtimeCheck = System.DateTime.MinValue;
+
+        private static void EnsureLoaded()
+        {
+            try
+            {
+                if (_paramsPath == null)
+                {
+                    string dir = null;
+                    try { dir = System.AppDomain.CurrentDomain.BaseDirectory; } catch { }
+                    if (string.IsNullOrEmpty(dir)) dir = ".";
+                    _paramsPath = System.IO.Path.Combine(dir, "params_override.csv");
+                }
+                System.DateTime mt = _paramsMtime;
+                bool checkNow = false;
+                try { checkNow = (System.DateTime.UtcNow - _lastMtimeCheck).TotalSeconds >= 1.0; } catch { checkNow = true; }
+                if (checkNow)
+                {
+                    try { _lastMtimeCheck = System.DateTime.UtcNow; } catch { }
+                    try { mt = System.IO.File.GetLastWriteTimeUtc(_paramsPath); } catch { }
+                }
+                if (_params != null && _params.Count > 0 && mt == _paramsMtime) return;
+                var dict = new System.Collections.Generic.Dictionary<string, float>(System.StringComparer.OrdinalIgnoreCase);
+                try
+                {
+                    foreach (var line in System.IO.File.ReadAllLines(_paramsPath))
+                    {
+                        if (string.IsNullOrEmpty(line)) continue;
+                        char c = line[0];
+                        if (c == '#' || c == '@') continue;
+                        int comma = line.IndexOf(',');
+                        if (comma <= 0) continue;
+                        string k = line.Substring(0, comma).Trim();
+                        string rest = line.Substring(comma + 1);
+                        int comma2 = rest.IndexOf(',');
+                        string v = (comma2 < 0 ? rest : rest.Substring(0, comma2)).Trim();
+                        float f;
+                        if (!string.IsNullOrEmpty(k) && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out f))
+                            dict[k] = f;
+                    }
+                }
+                catch { }
+                _params = dict;
+                _paramsMtime = mt;
+                try { MelonLogger.Msg("EPFM config loaded: " + dict.Count + " keys from params_override.csv"); } catch { }
+            }
+            catch { }
+        }
 
         public static float Param(string name, float defaultValue)
         {
             try
             {
-                if (!_initialized)
+                EnsureLoaded();
+                if (_params != null)
                 {
-                    _initialized = true;
-                    var gdType = AccessTools.TypeByName("GameData");
-                    if (gdType != null)
-                    {
-                        var instField = AccessTools.Field(gdType, "Instance");
-                        if (instField != null)
-                        {
-                            _gameDataInstance = instField.GetValue(null);
-                            if (_gameDataInstance != null)
-                            {
-                                _paramMethod = AccessTools.Method(gdType, "Param");
-                            }
-                        }
-                    }
-                }
-                if (_paramMethod != null && _gameDataInstance != null)
-                {
-                    return (float)_paramMethod.Invoke(_gameDataInstance, new object[] { name, defaultValue });
+                    float v;
+                    if (_params.TryGetValue(name, out v)) return v;
                 }
             }
             catch { }
@@ -91,7 +127,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "NationBaseIncome", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_NationBaseIncome_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_NationBaseIncome_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.NationBaseIncome");
                     }
@@ -108,7 +144,7 @@ namespace EPFM
                     var target = FindMethod(ccType, "GetResearchSpeed", 2, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(CC_GetResearchSpeed_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(CC_GetResearchSpeed_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched CampaignController.GetResearchSpeed");
                     }
@@ -125,7 +161,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "GetTechValueMultiplier", 3, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_GetTechValueMultiplier_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_GetTechValueMultiplier_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.GetTechValueMultiplier");
                     }
@@ -142,7 +178,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetAccuracySkillValue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAccuracySkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAccuracySkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetAccuracySkillValue");
                     }
@@ -159,7 +195,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetAimingSkillValue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAimingSkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAimingSkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetAimingSkillValue");
                     }
@@ -176,7 +212,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetReloadSkillValue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetReloadSkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetReloadSkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetReloadSkillValue");
                     }
@@ -193,7 +229,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetDamageControlSkillValue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetDamageControlSkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetDamageControlSkillValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetDamageControlSkillValue");
                     }
@@ -207,10 +243,10 @@ namespace EPFM
                 var shipType = AccessTools.TypeByName("Ship");
                 if (shipType != null)
                 {
-                    var target = FindMethod(shipType, "GetAiOffenseValue", 0, isStatic: true);
+                    var target = FindMethod(shipType, "GetAiOffenseValue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAiOffenseValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAiOffenseValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetAiOffenseValue");
                     }
@@ -224,10 +260,10 @@ namespace EPFM
                 var shipType = AccessTools.TypeByName("Ship");
                 if (shipType != null)
                 {
-                    var target = FindMethod(shipType, "GetAiDefenseValue", 0, isStatic: true);
+                    var target = FindMethod(shipType, "GetAiDefenseValue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAiDefenseValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetAiDefenseValue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetAiDefenseValue");
                     }
@@ -241,10 +277,10 @@ namespace EPFM
                 var shipType = AccessTools.TypeByName("Ship");
                 if (shipType != null)
                 {
-                    var target = FindMethod(shipType, "EstimatePower", 1, isStatic: true);
+                    var target = FindMethod(shipType, "EstimatePower", 2, isStatic: true);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_EstimatePower_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_EstimatePower_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.EstimatePower");
                     }
@@ -261,7 +297,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetVisibilityRange", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetVisibilityRange_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetVisibilityRange_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetVisibilityRange");
                     }
@@ -278,7 +314,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetSpottingRange", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetSpottingRange_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetSpottingRange_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetSpottingRange");
                     }
@@ -287,6 +323,8 @@ namespace EPFM
             catch (Exception ex) { MelonLogger.Warning("Failed to patch Ship.GetSpottingRange: " + ex.Message); }
 
             // PATCH 13: Ship.GetTorpedoDetectionRange - reduce AI torpedo detection
+            // (Bisect R1-R4 suspected this hook; Round 5 confirmation runs
+            // cleared it - crash reproduces identically with it live or cut.)
             try
             {
                 var shipType = AccessTools.TypeByName("Ship");
@@ -295,7 +333,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetTorpedoDetectionRange", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetTorpedoDetectionRange_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetTorpedoDetectionRange_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetTorpedoDetectionRange");
                     }
@@ -303,16 +341,16 @@ namespace EPFM
             }
             catch (Exception ex) { MelonLogger.Warning("Failed to patch Ship.GetTorpedoDetectionRange: " + ex.Message); }
 
-            // PATCH 14: Player.GetQuartersWeight - adjust crew quarters weight for AI
+            // PATCH 14: Ship.GetQuartersWeight - adjust crew quarters weight for AI
             try
             {
-                var playerType = AccessTools.TypeByName("Player");
-                if (playerType != null)
+                var shipType = AccessTools.TypeByName("Ship");
+                if (shipType != null)
                 {
-                    var target = FindMethod(playerType, "GetQuartersWeight", 1, isStatic: false);
+                    var target = FindMethod(shipType, "GetQuartersWeight", 1, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_GetQuartersWeight_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_GetQuartersWeight_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.GetQuartersWeight");
                     }
@@ -329,7 +367,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "YearlyArmyBudget", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_YearlyArmyBudget_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_YearlyArmyBudget_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.YearlyArmyBudget");
                     }
@@ -346,7 +384,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "Revenue", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_Revenue_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_Revenue_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.Revenue");
                     }
@@ -363,7 +401,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "Expenses", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_Expenses_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_Expenses_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.Expenses");
                     }
@@ -380,7 +418,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "ShipbuildingCapacityLimit", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_ShipbuildingCapacityLimit_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_ShipbuildingCapacityLimit_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.ShipbuildingCapacityLimit");
                     }
@@ -399,10 +437,10 @@ namespace EPFM
                 var partType = AccessTools.TypeByName("Part");
                 if (partType != null)
                 {
-                    var target = FindMethod(partType, "WeaponReloadingTime", 0, isStatic: true);
+                    var target = FindMethod(partType, "WeaponReloadingTime", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Part_WeaponReloadingTime_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Part_WeaponReloadingTime_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Part.WeaponReloadingTime for historical accuracy");
                     }
@@ -421,10 +459,10 @@ namespace EPFM
                 var partType = AccessTools.TypeByName("Part");
                 if (partType != null)
                 {
-                    var target = FindMethod(partType, "WeaponRotationSpeed", 0, isStatic: true);
+                    var target = FindMethod(partType, "WeaponRotationSpeed", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Part_WeaponRotationSpeed_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Part_WeaponRotationSpeed_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Part.WeaponRotationSpeed for historical accuracy");
                     }
@@ -432,16 +470,16 @@ namespace EPFM
             }
             catch (Exception ex) { MelonLogger.Warning("Failed to patch Part.WeaponRotationSpeed: " + ex.Message); }
 
-            // PATCH 24: Ship.MaxSpeed - realistic speed normalization
+            // PATCH 24: Ship.CruisingSpeed - realistic speed normalization
             try
             {
                 var shipType = AccessTools.TypeByName("Ship");
                 if (shipType != null)
                 {
-                    var target = FindMethod(shipType, "MaxSpeed", 0, isStatic: false);
+                    var target = FindMethod(shipType, "CruisingSpeed", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_MaxSpeed_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_CruisingSpeed_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.MaxSpeed");
                     }
@@ -459,7 +497,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "Acceleration", 1, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_Acceleration_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_Acceleration_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.Acceleration");
                     }
@@ -476,7 +514,7 @@ namespace EPFM
                     var target = FindMethod(playerType, "CrewPoolIncome", 0, isStatic: false);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_CrewPoolIncome_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Player_CrewPoolIncome_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Player.CrewPoolIncome");
                     }
@@ -494,7 +532,7 @@ namespace EPFM
                     var target = FindMethod(shipType, "CalcSideHitChance", 3, isStatic: true);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_CalcSideHitChance_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_CalcSideHitChance_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.CalcSideHitChance with v3 yaw armor");
                     }
@@ -502,9 +540,21 @@ namespace EPFM
             }
             catch (Exception ex) { MelonLogger.Warning("Failed to patch Ship.CalcSideHitChance: " + ex.Message); }
 
-            // PATCH 21: Ship.GetPenetration - v4 historical penetration scaling
-            // The method has 6 params with Nullable<Vector3> at position 5 (last).
-            // We only touch __result, never read params - safe.
+            // PATCH 21: Ship.GetPenetration - PERMANENTLY DISABLED. PROVEN KILLER.
+            // Crash-dump proof (Sep 2026, 10 dumps): every CTD dies in
+            // Buffer.Memmove under IL_STUB_ReversePInvoke(I64,I64,F4,U1,
+            // I64,I64,I64) - the (float range, bool sideHit, ...) hook shape,
+            // unique to GetPenetration among all patched methods. The original
+            // takes Nullable<ShellType> + Nullable<Vector3>; Harmony's Il2Cpp
+            // wrapper Memmove-copies those structs per call, and turret-click
+            // stat cards invoke it with NULL nullables (no target in preview)
+            // -> AV -> ExecutionEngineException (c0000005 in coreclr). NOTE:
+            // "we never read params" does NOT help - the WRAPPER marshals
+            // them regardless of what the postfix declares.
+            // RULE: never patch originals with struct/Nullable params.
+            // Verified safe: primitives, string, object, references,
+            // generic collections.
+#if false
             try
             {
                 var shipType = AccessTools.TypeByName("Ship");
@@ -513,13 +563,14 @@ namespace EPFM
                     var target = FindMethod(shipType, "GetPenetration", 6, isStatic: true);
                     if (target != null)
                     {
-                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetPenetration_Postfix), BindingFlags.Static | BindingFlags.NonPublic);
+                        var postfix = typeof(EPFMPatcher).GetMethod(nameof(Ship_GetPenetration_Postfix), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
                         harmony.Patch(target, new HarmonyMethod(postfix));
                         MelonLogger.Msg("Patched Ship.GetPenetration with v4 historical scaling");
                     }
                 }
             }
             catch (Exception ex) { MelonLogger.Warning("Failed to patch Ship.GetPenetration: " + ex.Message); }
+#endif
 
             // PATCH 22: Ship.GetAccuracySkillValue - v3 cascade cap (DEPRECATED)
             // Now handled in Patch 4 directly. Skipping to avoid double-nerf.
@@ -557,16 +608,55 @@ namespace EPFM
             return null;
         }
 
+        // Diagnostic entry trace: gated by taf_epfm_trace (default 0).
+        // Set to 1 for ONE run to capture a patch-cycle tail, then remove.
+        private static void Trace(string n)
+        {
+            try { if (EPFMConfig.Param("taf_epfm_trace", 0f) > 0.5f) MelonLogger.Msg("EPFM> " + n); } catch { }
+        }
+
+        // AI discrimination that works at runtime: Il2Cpp instance FIELDS
+        // are invisible to classic reflection (AccessTools.Field misses on
+        // Player at runtime despite the field existing), so probe once per
+        // type: isAi field, then isAi property, then isAiControlled
+        // property. Cached; the winning path is logged once per type.
+        private static readonly System.Collections.Generic.Dictionary<string, int> _isAiMode =
+            new System.Collections.Generic.Dictionary<string, int>();
+        private static bool IsAi(object inst)
+        {
+            if (inst == null) return false;
+            try
+            {
+                var t = inst.GetType();
+                string tn = null;
+                try { tn = t.FullName; } catch { }
+                int mode = -2;
+                if (tn != null) { lock (_isAiMode) { if (!_isAiMode.TryGetValue(tn, out mode)) mode = -2; } }
+                if (mode == -2)
+                {
+                    mode = -1;
+                    try { if (AccessTools.Field(t, "isAi") != null) mode = 0; } catch { }
+                    if (mode == -1) { try { if (AccessTools.Property(t, "isAi") != null) mode = 1; } catch { } }
+                    if (mode == -1) { try { if (AccessTools.Property(t, "isAiControlled") != null) mode = 2; } catch { } }
+                    if (tn != null) { lock (_isAiMode) { _isAiMode[tn] = mode; } }
+                    try { MelonLogger.Msg("EPFM isAi probe: " + tn + " -> mode " + mode); } catch { }
+                }
+                if (mode == 0) { try { return (bool)AccessTools.Field(t, "isAi").GetValue(inst); } catch { return false; } }
+                if (mode == 1) { try { return (bool)AccessTools.Property(t, "isAi").GetValue(inst, null); } catch { return false; } }
+                if (mode == 2) { try { return (bool)AccessTools.Property(t, "isAiControlled").GetValue(inst, null); } catch { return false; } }
+            }
+            catch { }
+            return false;
+        }
+
         // POSTFIX 1: Player.NationBaseIncome - nerf AI income
         public static void Player_NationBaseIncome_Postfix(ref float __result, object __instance)
         {
             try
             {
+                Trace("Player_NationBaseIncome");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (!isAi) return;
+                if (!IsAi(__instance)) return;
                 float nerf = EPFMConfig.Param("taf_epfm_ai_income_nerf", 0.75f);
                 __result *= nerf;
             }
@@ -578,12 +668,9 @@ namespace EPFM
         {
             try
             {
+                Trace("CC_GetResearchSpeed");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (player == null) return;
-                var isAiField = AccessTools.Field(player.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(player);
-                if (!isAi) return;
+                if (!IsAi(player)) return;
                 float cap = EPFMConfig.Param("taf_epfm_ai_research_cap", 1.0f);
                 if (__result > cap) __result = cap;
             }
@@ -595,12 +682,9 @@ namespace EPFM
         {
             try
             {
+                Trace("Player_GetTechValueMultiplier");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_accuracy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (!isAi) return;
+                if (!IsAi(__instance)) return;
                 if (techDataName != null && (
                     techDataName.Contains("accuracy") ||
                     techDataName.Contains("aim") ||
@@ -620,6 +704,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetAccuracySkillValue");
                 // v3 cascade cap - prevents absurd accuracy from multiplier stacking
                 if (EPFMConfig.Param("taf_epfm_v3_cascadeCap", 1f) > 0.5f)
                 {
@@ -652,6 +737,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetAimingSkillValue");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_accuracy", 1f) < 0.5f) return;
                 if (__instance == null) return;
                 var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
@@ -676,6 +762,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetReloadSkillValue");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
                 if (__instance == null) return;
                 var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
@@ -700,6 +787,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetDamageControlSkillValue");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
                 if (__instance == null) return;
                 var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
@@ -724,6 +812,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetAiOffenseValue");
                 float nerf = EPFMConfig.Param("taf_epfm_ai_offense_nerf", 0.9f);
                 __result *= nerf;
             }
@@ -735,6 +824,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetAiDefenseValue");
                 float nerf = EPFMConfig.Param("taf_epfm_ai_defense_nerf", 0.9f);
                 __result *= nerf;
             }
@@ -742,11 +832,12 @@ namespace EPFM
         }
 
         // POSTFIX 10: Ship.EstimatePower - reduce AI fleet power perception
-        // (the method has 1 param, but we don't need to read it - just modify the result)
+        // (the method has 2 params (ships, useDamageEstimation) - we only touch the result)
         public static void Ship_EstimatePower_Postfix(ref float __result)
         {
             try
             {
+                Trace("Ship_EstimatePower");
                 // The parameter is an IEnumerable<Ship> - we can't easily check isAi
                 // for each ship. Apply a flat nerf so AI underestimates own power.
                 float nerf = EPFMConfig.Param("taf_epfm_ai_estimate_power_nerf", 0.95f);
@@ -760,6 +851,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetVisibilityRange");
                 if (EPFMConfig.Param("taf_epfm_equalize_fog_of_war", 1f) < 0.5f) return;
                 if (__instance == null) return;
                 var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
@@ -779,6 +871,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetSpottingRange");
                 if (EPFMConfig.Param("taf_epfm_equalize_fog_of_war", 1f) < 0.5f) return;
                 if (__instance == null) return;
                 var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
@@ -798,6 +891,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetTorpedoDetectionRange");
                 if (EPFMConfig.Param("taf_epfm_equalize_fog_of_war", 1f) < 0.5f) return;
                 if (__instance == null) return;
                 var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
@@ -812,16 +906,17 @@ namespace EPFM
             catch { }
         }
 
-        // POSTFIX 14: Player.GetQuartersWeight - reduce AI crew effectiveness
+        // POSTFIX 14: Ship.GetQuartersWeight - reduce AI crew effectiveness
         public static void Player_GetQuartersWeight_Postfix(ref float __result, object __instance)
         {
             try
             {
+                Trace("Player_GetQuartersWeight");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
                 if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
+                var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
+                if (prop == null) return;
+                bool isAi = (bool)prop.GetValue(__instance);
                 if (isAi)
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_quarters_nerf", 0.95f);
@@ -836,12 +931,9 @@ namespace EPFM
         {
             try
             {
+                Trace("Player_YearlyArmyBudget");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (isAi)
+                if (!IsAi(__instance)) return;
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_army_budget_nerf", 0.85f);
                     __result *= nerf;
@@ -855,12 +947,9 @@ namespace EPFM
         {
             try
             {
+                Trace("Player_Revenue");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (isAi)
+                if (!IsAi(__instance)) return;
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_revenue_nerf", 0.8f);
                     __result *= nerf;
@@ -874,12 +963,9 @@ namespace EPFM
         {
             try
             {
+                Trace("Player_Expenses");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (isAi)
+                if (!IsAi(__instance)) return;
                 {
                     // For expenses, "nerf" = increase (AI spends more)
                     float boost = EPFMConfig.Param("taf_epfm_ai_expense_boost", 1.1f);
@@ -894,12 +980,9 @@ namespace EPFM
         {
             try
             {
+                Trace("Player_ShipbuildingCapacityLimit");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (isAi)
+                if (!IsAi(__instance)) return;
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_shipyard_nerf", 0.85f);
                     __result *= nerf;
@@ -909,19 +992,16 @@ namespace EPFM
         }
 
         // POSTFIX 19: Player.CrewPoolIncome - nerf AI crew pool income
-        public static void Player_CrewPoolIncome_Postfix(ref float __result, object __instance)
+        public static void Player_CrewPoolIncome_Postfix(ref int __result, object __instance)
         {
             try
             {
+                Trace("Player_CrewPoolIncome");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (isAi)
+                if (!IsAi(__instance)) return;
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_crew_income_nerf", 0.9f);
-                    __result *= nerf;
+                    __result = (int)(__result * nerf);
                 }
             }
             catch { }
@@ -935,6 +1015,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_CalcSideHitChance");
                 // v3_yawArmor: continuous sloped armor effectiveness
                 if (EPFMConfig.Param("taf_epfm_v3_yawArmor", 1f) > 0.5f)
                 {
@@ -988,6 +1069,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetPenetration");
                 float scale = EPFMConfig.Param("taf_epfm_v4_penetration_scale", 1.0f);
                 __result *= scale;
             }
@@ -999,12 +1081,9 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_GetQuartersWeight");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
-                if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
-                if (isAi)
+                if (!IsAi(__instance)) return;
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_quarters_nerf_v2", 0.92f);
                     __result *= nerf;
@@ -1029,6 +1108,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Part_WeaponReloadingTime");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_accuracy", 1f) < 0.5f) return;
                 // Apply small historical correction: ~5% longer reload across the board
                 // (the game already has its own reload model, so we just nudge it)
@@ -1043,6 +1123,7 @@ namespace EPFM
         {
             try
             {
+                Trace("Part_WeaponRotationSpeed");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_accuracy", 1f) < 0.5f) return;
                 float scale = EPFMConfig.Param("taf_epfm_v5_rotation_scale", 1.0f);
                 __result *= scale;
@@ -1050,16 +1131,17 @@ namespace EPFM
             catch { }
         }
 
-        // POSTFIX 24: Ship.MaxSpeed - fine tuning of max speed
-        public static void Ship_MaxSpeed_Postfix(ref float __result, object __instance)
+        // POSTFIX 24: Ship.CruisingSpeed - fine tuning of max speed
+        public static void Ship_CruisingSpeed_Postfix(ref float __result, object __instance)
         {
             try
             {
+                Trace("Ship_CruisingSpeed");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
                 if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
+                var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
+                if (prop == null) return;
+                bool isAi = (bool)prop.GetValue(__instance);
                 if (isAi)
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_max_speed_nerf", 0.95f);
@@ -1074,11 +1156,12 @@ namespace EPFM
         {
             try
             {
+                Trace("Ship_Acceleration");
                 if (EPFMConfig.Param("taf_epfm_equalize_ai_economy", 1f) < 0.5f) return;
                 if (__instance == null) return;
-                var isAiField = AccessTools.Field(__instance.GetType(), "isAi");
-                if (isAiField == null) return;
-                bool isAi = (bool)isAiField.GetValue(__instance);
+                var prop = AccessTools.Property(__instance.GetType(), "isAiControlled");
+                if (prop == null) return;
+                bool isAi = (bool)prop.GetValue(__instance);
                 if (isAi)
                 {
                     float nerf = EPFMConfig.Param("taf_epfm_ai_acceleration_nerf", 0.95f);
