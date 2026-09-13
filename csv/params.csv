@@ -480,7 +480,7 @@ air_drag_coef,8.45,"modifier shaping up the shell ballistics, the bigger, the le
 shell_kinetic_energy_mod,29.2,modifier for adjusting the landing speed of shells (allows curvy trajectories and shells do not land as feathers),29.2584,,,,,,
 gun_range_mod,1,multiplier to convert real world gun range into game gun range (usually something like 0.2-1),1,,,,,,
 reload_speed_mod,1,gun's reload speed multiplier,1,,,,,,
-torpedo_ammo,2,amount of torpedo launches per barrels,3,,,,,,
+torpedo_ammo,99,amount of torpedo launches per barrels,3,,,,,,
 torpedo_reload,110,torpedo reload time in seconds,120,torpedo - range to target (m):,8000,,,,
 torpedo_inaccuracy,0.0025,inaccuracy ratio as ratio of path which can be offsetted randomly,0.01,torpedo inaccuracy will be: (+/- m),20,,,,
 torpedo_detection_base,682.5,base detection range of torpedoes (meters),1000,,,,,,

@@ -1,0 +1,30 @@
+# CarrierMod configuration ('key,value' lines; '#' = comment).
+# Delete a line to fall back to the default shown here.
+# File is read once at game start; changes need a game restart.
+verbose,false
+# Plane flight speeds (map units/s) per air-wing mark:
+mk1_plane_speed,90
+mk2_plane_speed,110
+mk3_plane_speed,130
+# Plane torpedo: EFFECTIVE drop speed (u/s) + extra multiplier.
+# Effective = drop_speed x tube_factor x boost (defaults: 90).
+torpedo_drop_speed,90
+plane_torpedo_boost,1.0
+torpedo_life,60
+# Strike geometry: release range, RTB distance, deck cycle (s).
+release_distance,1250
+rearm_distance,150
+rearm_time,135
+# Anti-air: envelope (m), volley cycle (s), plane HP, one-shot
+# crit chance, global hit-chance multiplier, max rolls/ship.
+aa_range,2500
+aa_cycle,2.5
+aa_plane_hp,2
+aa_crit_chance,0.20
+aa_hit_mult,0.95
+aa_max_rolls,6
+# Squadron waves: gap between waves (s), deck launch cadence (s),
+# wave planning time cap (s).
+wave_gap,30
+launch_gap,3
+wave_time_limit,600
