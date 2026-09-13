@@ -2,7 +2,9 @@
 
 A historical-balance rework for *Ultimate Admiral: Dreadnoughts* (UAD) v1.7.0.0 that
 removes the AI's hard-coded advantages and rebalances combat around real-world naval
-data, while fixing a game-breaking custom-battle crash.
+data, while fixing a game-breaking custom-battle crash. Opens much of the game to 
+customization and editing, offering options to tailor the game to your liking. 
+This is the UAD: Rework/EPFM (Even Playing Field Mod). Enjoy!
 
 This project builds on, and would not exist without, the excellent work of others —
 see **[Credits](#credits)**.
